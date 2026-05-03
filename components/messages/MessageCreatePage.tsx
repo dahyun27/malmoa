@@ -7,6 +7,7 @@ import { MessageCreateForm } from "@/components/messages/MessageCreateForm";
 import { MessageResultsPanel } from "@/components/messages/MessageResultsPanel";
 import { sampleMemo, situations, students, tones } from "@/lib/demoData";
 import { generateParentMessages } from "@/lib/generateParentMessages";
+import { saveMessageHistoryRecord } from "@/lib/messageHistoryStore";
 import type { GeneratedMessage } from "@/types/message";
 
 export function MessageCreatePage() {
@@ -16,6 +17,7 @@ export function MessageCreatePage() {
   const [memo, setMemo] = useState(sampleMemo);
   const [copiedId, setCopiedId] = useState("");
   const [hasGenerated, setHasGenerated] = useState(true);
+  const [savedLabel, setSavedLabel] = useState("");
 
   const student = useMemo(
     () => students.find((item) => item.id === selectedStudent) ?? students[0],
@@ -39,17 +41,41 @@ export function MessageCreatePage() {
     window.setTimeout(() => setCopiedId(""), 1500);
   };
 
+  const handleGenerate = () => {
+    const now = new Date();
+
+    saveMessageHistoryRecord({
+      id: `message-${now.getTime()}`,
+      studentName: student.name,
+      studentGrade: student.grade,
+      parentTitle: student.parentTitle,
+      situation,
+      tone,
+      inputMemo: memo,
+      shortMessage: generated.shortMessage,
+      softMessage: generated.softMessage,
+      firmMessage: generated.firmMessage,
+      createdAt: now.toISOString(),
+    });
+    setHasGenerated(true);
+    setSavedLabel("생성 기록에 저장됨");
+    window.setTimeout(() => setSavedLabel(""), 1800);
+  };
+
   return (
     <>
       <PageHeader
         action={
-          <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white shadow-soft hover:bg-moss"
-            type="button"
-          >
-            <Sparkles size={18} />
-            무료 MVP
-          </button>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <button
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white shadow-soft hover:bg-moss"
+              type="button"
+            >
+              <Sparkles size={18} />
+              무료 MVP
+            </button>
+            {savedLabel && <p className="text-xs font-semibold text-moss">{savedLabel}</p>}
+          </div>
         }
         eyebrow="학부모 연락문 생성"
         title="오늘 수업 메모를 바로 보낼 문장으로"
@@ -58,7 +84,7 @@ export function MessageCreatePage() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
         <MessageCreateForm
           memo={memo}
-          onGenerate={() => setHasGenerated(true)}
+          onGenerate={handleGenerate}
           onMemoChange={setMemo}
           onSituationChange={setSituation}
           onStudentChange={setSelectedStudent}
