@@ -46,7 +46,7 @@ export function MessageCreateForm({
             value={selectedStudent}
           >
             {students.map((item) => (
-              <option key={item.name} value={item.name}>
+              <option key={item.id} value={item.id}>
                 {item.name} · {item.grade} · {item.subject}
               </option>
             ))}

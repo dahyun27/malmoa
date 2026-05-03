@@ -10,7 +10,7 @@ import { generateParentMessages } from "@/lib/generateParentMessages";
 import type { GeneratedMessage } from "@/types/message";
 
 export function MessageCreatePage() {
-  const [selectedStudent, setSelectedStudent] = useState(students[0].name);
+  const [selectedStudent, setSelectedStudent] = useState(students[0].id);
   const [situation, setSituation] = useState(situations[0]);
   const [tone, setTone] = useState(tones[0]);
   const [memo, setMemo] = useState(sampleMemo);
@@ -18,7 +18,7 @@ export function MessageCreatePage() {
   const [hasGenerated, setHasGenerated] = useState(true);
 
   const student = useMemo(
-    () => students.find((item) => item.name === selectedStudent) ?? students[0],
+    () => students.find((item) => item.id === selectedStudent) ?? students[0],
     [selectedStudent],
   );
 
