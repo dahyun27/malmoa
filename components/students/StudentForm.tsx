@@ -14,13 +14,14 @@ const emptyValues: StudentFormValues = {
 
 type StudentFormProps = {
   editingStudent: Student | null;
+  isSubmitting?: boolean;
   values: StudentFormValues;
   onCancelEdit: () => void;
   onChange: (values: StudentFormValues) => void;
   onSubmit: () => void;
 };
 
-export function StudentForm({ editingStudent, values, onCancelEdit, onChange, onSubmit }: StudentFormProps) {
+export function StudentForm({ editingStudent, isSubmitting = false, values, onCancelEdit, onChange, onSubmit }: StudentFormProps) {
   const canSubmit = values.name.trim().length > 0 && values.subject.trim().length > 0;
 
   const updateField = (field: keyof StudentFormValues, value: string) => {
@@ -114,12 +115,12 @@ export function StudentForm({ editingStudent, values, onCancelEdit, onChange, on
       <div className="mt-5 flex gap-2">
         <button
           className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-md bg-coral px-4 text-sm font-bold text-white shadow-soft hover:bg-[#bf584c] disabled:bg-ink/25"
-          disabled={!canSubmit}
+          disabled={!canSubmit || isSubmitting}
           onClick={onSubmit}
           type="button"
         >
           {editingStudent ? <Check size={18} /> : <Plus size={18} />}
-          {editingStudent ? "수정 저장" : "학생 추가"}
+          {isSubmitting ? "저장 중" : editingStudent ? "수정 저장" : "학생 추가"}
         </button>
         {!editingStudent && (
           <button

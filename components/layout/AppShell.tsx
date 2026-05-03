@@ -1,9 +1,11 @@
 "use client";
 
-import { BookOpenText, History, LayoutDashboard, MessageSquareText, Settings, Users } from "lucide-react";
+import { BookOpenText, History, LayoutDashboard, LogIn, LogOut, MessageSquareText, Settings, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const navigation: Array<{ href: string; label: string; Icon: LucideIcon }> = [
   { href: "/dashboard", label: "대시보드", Icon: LayoutDashboard },
@@ -19,6 +21,27 @@ type AppShellProps = {
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const supabase = createSupabaseBrowserClient();
+      void supabase.auth.getUser().then(({ data }) => {
+        setUserEmail(data.user?.email ?? "");
+      });
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    setUserEmail("");
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <main className="min-h-screen">
@@ -52,6 +75,27 @@ export function AppShell({ children }: AppShellProps) {
               );
             })}
           </nav>
+
+          <div className="mt-8 border-t border-black/10 pt-4">
+            {userEmail ? (
+              <div className="space-y-3">
+                <p className="break-all text-xs font-semibold text-ink/55">{userEmail}</p>
+                <button
+                  className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm text-ink/65 hover:bg-black/5"
+                  onClick={handleSignOut}
+                  type="button"
+                >
+                  <LogOut size={18} />
+                  로그아웃
+                </button>
+              </div>
+            ) : (
+              <Link className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm text-ink/65 hover:bg-black/5" href="/login">
+                <LogIn size={18} />
+                로그인
+              </Link>
+            )}
+          </div>
         </aside>
 
         <section className="flex-1 px-5 py-5 md:px-8 lg:px-10">{children}</section>
