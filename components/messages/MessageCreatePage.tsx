@@ -1,14 +1,16 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { MessageCreateForm } from "@/components/messages/MessageCreateForm";
 import { MessageResultsPanel } from "@/components/messages/MessageResultsPanel";
 import { sampleMemo, situations, students, tones } from "@/lib/demoData";
 import { generateParentMessages } from "@/lib/generateParentMessages";
 import { saveMessageHistoryRecord } from "@/lib/messageHistoryStore";
+import { defaultSettings, getAppSettings } from "@/lib/settingsStore";
 import type { GeneratedMessage } from "@/types/message";
+import type { AppSettings } from "@/types/settings";
 
 export function MessageCreatePage() {
   const [selectedStudent, setSelectedStudent] = useState(students[0].id);
@@ -18,6 +20,17 @@ export function MessageCreatePage() {
   const [copiedId, setCopiedId] = useState("");
   const [hasGenerated, setHasGenerated] = useState(true);
   const [savedLabel, setSavedLabel] = useState("");
+  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const loadedSettings = getAppSettings();
+      setSettings(loadedSettings);
+      setTone(loadedSettings.defaultTone);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   const student = useMemo(
     () => students.find((item) => item.id === selectedStudent) ?? students[0],
@@ -25,8 +38,12 @@ export function MessageCreatePage() {
   );
 
   const generated = useMemo(
-    () => generateParentMessages(student.name, student.parentTitle, situation, memo),
-    [memo, situation, student.name, student.parentTitle],
+    () =>
+      generateParentMessages(student.name, student.parentTitle, situation, memo, {
+        academyName: settings.academyName,
+        signature: settings.messageSignature,
+      }),
+    [memo, settings.academyName, settings.messageSignature, situation, student.name, student.parentTitle],
   );
 
   const results: GeneratedMessage[] = [
