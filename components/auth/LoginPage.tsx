@@ -2,6 +2,7 @@
 
 import { BookOpenText, LogIn, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import type { FormEvent } from "react";
 import { useState } from "react";
 import { getAuthErrorMessage } from "@/lib/authMessages";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -19,36 +20,54 @@ export function LoginPage() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canSubmit = email.trim().length > 0 && password.length >= 6;
+  const handleSubmit = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
 
-  const handleSubmit = async () => {
-    if (!canSubmit) {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      setNotice({ tone: "error", text: "이메일을 입력해주세요." });
+      return;
+    }
+
+    if (!trimmedEmail.includes("@")) {
+      setNotice({ tone: "error", text: "이메일 형식을 확인해주세요." });
+      return;
+    }
+
+    if (password.length < 6) {
+      setNotice({ tone: "error", text: "비밀번호는 6자 이상 입력해주세요." });
       return;
     }
 
     setIsSubmitting(true);
     setNotice(null);
 
-    const supabase = createSupabaseBrowserClient();
-    const authResult =
-      mode === "sign-in"
-        ? await supabase.auth.signInWithPassword({ email: email.trim(), password })
-        : await supabase.auth.signUp({ email: email.trim(), password });
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const authResult =
+        mode === "sign-in"
+          ? await supabase.auth.signInWithPassword({ email: trimmedEmail, password })
+          : await supabase.auth.signUp({ email: trimmedEmail, password });
 
-    setIsSubmitting(false);
+      setIsSubmitting(false);
 
-    if (authResult.error) {
-      setNotice({ tone: "error", text: getAuthErrorMessage(authResult.error.message) });
-      return;
+      if (authResult.error) {
+        setNotice({ tone: "error", text: getAuthErrorMessage(authResult.error.message) });
+        return;
+      }
+
+      if (mode === "sign-up" && !authResult.data.session) {
+        setNotice({ tone: "success", text: "가입 확인 메일을 보냈습니다. 메일 인증을 완료한 뒤 로그인해주세요." });
+        return;
+      }
+
+      router.push("/students");
+      router.refresh();
+    } catch {
+      setIsSubmitting(false);
+      setNotice({ tone: "error", text: "로그인 요청 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요." });
     }
-
-    if (mode === "sign-up" && !authResult.data.session) {
-      setNotice({ tone: "success", text: "가입 확인 메일을 보냈습니다. 메일 인증을 완료한 뒤 로그인해주세요." });
-      return;
-    }
-
-    router.push("/students");
-    router.refresh();
   };
 
   return (
@@ -93,7 +112,7 @@ export function LoginPage() {
             : "선생님 계정을 새로 만듭니다. Supabase 설정에 따라 이메일 인증이 필요할 수 있습니다."}
         </p>
 
-        <div className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="block space-y-2">
             <span className="text-sm font-semibold text-ink">이메일</span>
             <input
@@ -115,27 +134,26 @@ export function LoginPage() {
               value={password}
             />
           </label>
-        </div>
 
-        {notice && (
-          <p
-            className={`mt-4 rounded-md p-3 text-sm font-semibold ${
-              notice.tone === "success" ? "bg-sage text-ink" : "bg-linen text-coral"
-            }`}
+          {notice && (
+            <p
+              className={`rounded-md p-3 text-sm font-semibold ${
+                notice.tone === "success" ? "bg-sage text-ink" : "bg-linen text-coral"
+              }`}
+            >
+              {notice.text}
+            </p>
+          )}
+
+          <button
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-coral px-4 text-sm font-bold text-white shadow-soft hover:bg-[#bf584c] disabled:bg-ink/25"
+            disabled={isSubmitting}
+            type="submit"
           >
-            {notice.text}
-          </p>
-        )}
-
-        <button
-          className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-coral px-4 text-sm font-bold text-white shadow-soft hover:bg-[#bf584c] disabled:bg-ink/25"
-          disabled={!canSubmit || isSubmitting}
-          onClick={handleSubmit}
-          type="button"
-        >
-          {mode === "sign-in" ? <LogIn size={18} /> : <UserPlus size={18} />}
-          {isSubmitting ? "처리 중" : mode === "sign-in" ? "로그인" : "회원가입"}
-        </button>
+            {mode === "sign-in" ? <LogIn size={18} /> : <UserPlus size={18} />}
+            {isSubmitting ? "처리 중" : mode === "sign-in" ? "로그인" : "회원가입"}
+          </button>
+        </form>
       </section>
     </main>
   );
